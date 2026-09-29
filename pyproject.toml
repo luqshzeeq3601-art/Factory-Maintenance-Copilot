@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maintenance-copilot"
+name = "factory-maintenance-copilot"
 version = "0.1.0"
-description = "Maintenance Copilot"
+description = "Factory Maintenance Copilot"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "fastapi>=0.115.0",

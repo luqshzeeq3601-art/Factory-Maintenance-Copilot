@@ -1,4 +1,4 @@
-# Maintenance Copilot
+# Factory Maintenance Copilot
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph%20v0.2.35%2B-orange.svg)](https://langchain-ai.github.io/langgraph/)
@@ -260,9 +260,9 @@ Fill `JWT_SECRET` and `TELEMETRY_HMAC_SECRET` (32+ chars). Generate with `python
 
 ### 3. Backend setup
 ```bash
-# Clone and enter directory (replace <your-org> with the real org/user)
-git clone https://github.com/<your-org>/industrial-ai-maintenance-copilot.git
-cd industrial-ai-maintenance-copilot
+# Clone and enter directory
+git clone https://github.com/luqshzeeq3601-art/Factory-Maintenance-Copilot.git
+cd Factory-Maintenance-Copilot
 
 # Activate environment and install dependencies
 uv venv
