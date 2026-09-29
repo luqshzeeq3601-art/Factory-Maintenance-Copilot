@@ -1,411 +1,331 @@
 # Factory Maintenance Copilot
 
+**An AI assistant for factory maintenance teams that answers from your own manuals, reads live machine data, and never changes anything without a supervisor's approval.**
+
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
-[![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph%20v0.2.35%2B-orange.svg)](https://langchain-ai.github.io/langgraph/)
-[![Ollama](https://img.shields.io/badge/Ollama-Qwen2.5--7B-green.svg)](https://ollama.ai)
-[![Azure OpenAI](https://img.shields.io/badge/Azure%20OpenAI-Supported-blue.svg)](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
-[![FAISS](https://img.shields.io/badge/FAISS-Hybrid%20Dense%20%2B%20BM25-red.svg)](https://github.com/facebookresearch/faiss)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Kustomize%20Manifests-326ce5.svg)](https://kubernetes.io)
-[![Observability](https://img.shields.io/badge/Observability-OTel%20%2B%20Prometheus-purple.svg)](https://prometheus.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen.svg)](./.github/workflows/ci.yml)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
+[![LangGraph](https://img.shields.io/badge/LangGraph-multi--agent-orange.svg)](https://langchain-ai.github.io/langgraph/)
+[![Ollama](https://img.shields.io/badge/runs%20locally-Ollama-green.svg)](https://ollama.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A human-in-the-loop AI maintenance copilot for factories and semiconductor fabs. Technicians ask about a machine, alarm, or fault code; the copilot answers from the plant's own manuals and SOPs, reads live telemetry, and drafts work orders that a supervisor must approve before anything changes.
+When a machine alarms at 3 a.m., the technician on shift usually has three problems: the manual is hundreds of pages long, the machine's history is scattered across logs and spreadsheets, and the person who knows the fix is asleep. Factory Maintenance Copilot puts all three in one place. Ask a question in plain English and get an answer grounded in your OEM manuals and SOPs, with sources cited, the machine's recent telemetry alongside, and a draft work order ready for a supervisor to sign off.
 
-Under the hood: a LangGraph multi-agent graph (retrieval, diagnostic, maintenance), hybrid FAISS + BM25 retrieval with Reciprocal Rank Fusion, role-based access control, HMAC-signed REST/MQTT telemetry, and SQLite or PostgreSQL persistence. Sample documentation covers CNC lathes, hydraulic presses, plasma etchers, PECVD, lithography scanners, CMP polishers, and LOTO SOPs.
-
-Runs fully offline on a single workstation (tested on an RTX 3070, 8 GB VRAM) with Ollama `qwen2.5:7b-instruct` and `BAAI/bge-large-en-v1.5`, or switches to Azure OpenAI with one setting.
-
----
-
-## Outcomes
-
-- Retrieved the right manual section in the top 3 results for 94.0% of 50 labeled plant queries (98.0% Recall@5, 0.793 MRR) at 202 ms p95, by fusing FAISS dense and BM25 search with Reciprocal Rank Fusion across 5 plant domains.
-- Blocked 100% of unsafe and off-topic prompts on a 100-case benchmark (97.0% guardrail accuracy, 94.3% abstention precision), so the copilot declines instead of guessing.
-- Gated every AI-proposed work order, inspection, and alarm change behind supervisor approval, orchestrating retrieval, diagnostic, and maintenance agents with a LangGraph `interrupt()` checkpoint and 3 RBAC roles.
-- Eliminated LLM spend, cutting modeled cost from $74.50 to $0.00 per 10,000 queries by serving Qwen2.5-7B on local Ollama, with Azure OpenAI kept as a one-switch cloud fallback.
-- Secured live sensor feeds over REST and MQTT (QoS 1) with HMAC SHA-256 signatures and 300 s replay protection; telemetry raises alarms but can never create work orders on its own.
-- Packaged the platform for plant and cloud rollout with 4 Docker Compose profiles, Kubernetes Kustomize manifests, and GitHub Actions CI over 82 pytest tests.
+It runs entirely on one workstation with a local LLM, so plant documents and sensor data never leave the site.
 
 ---
 
 ## Contents
 
-- [Outcomes](#outcomes)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Human-in-the-Loop Approval Workflow](#human-in-the-loop-approval-workflow)
-- [Persistence](#persistence)
-- [Benchmark Results](#benchmark-results)
-- [Technology Stack](#technology-stack)
-- [Repository Layout](#repository-layout)
-- [Quick Start](#quick-start)
+- [Who it is for](#who-it-is-for)
+- [What you can do with it](#what-you-can-do-with-it)
+- [How it works](#how-it-works)
+- [Quick start](#quick-start)
+- [Using the app](#using-the-app)
+- [Bring your own plant data](#bring-your-own-plant-data)
 - [Configuration](#configuration)
-- [Local Development Accounts](#local-development-accounts)
-- [Tests and Benchmarks](#tests-and-benchmarks)
+- [Results](#results)
 - [Deployment](#deployment)
-- [Contributing](#contributing)
+- [Project structure](#project-structure)
+- [Development](#development)
+- [Limitations](#limitations)
 - [License](#license)
 
 ---
 
-## Features
+## Who it is for
 
-- **Multi-agent LangGraph StateGraph:** supervisor router + retrieval / diagnostic / maintenance specialists + prototype embedding guardrail.
-- **Human-in-the-Loop safety:** state-changing actions pause via `interrupt()` until a supervisor approves (`backend/app/agents/approval.py`).
-- **RBAC:** `technician < supervisor < admin` with Argon2id hashing, JWT HttpOnly cookies, CSRF token (`backend/app/auth/security.py`).
-- **Telemetry ingestion:** HMAC SHA-256 REST + MQTT QoS 1 with 300s clock-skew replay protection; telemetry creates alarms only, never auto work orders.
-- **Hybrid RAG:** FAISS dense + BM25 lexical with Reciprocal Rank Fusion (`k=60`), header-aware semantic chunking, metadata filters.
-- **Dual persistence:** SQLite (WAL, edge default) and PostgreSQL (production) via SQLAlchemy 2.0 + Alembic; `SqliteSaver` / `PostgresSaver` checkpoints.
-- **Multi-provider LLM:** local Ollama (zero marginal cost) or Azure OpenAI with token telemetry (`backend/app/llm/factory.py`).
-- **Observability & deploy:** OpenTelemetry tracing, Prometheus `/metrics`, Docker Compose profiles, Kubernetes Kustomize manifests.
+| Role | What they get |
+|---|---|
+| **Maintenance technicians** | Fast, cited answers from manuals and SOPs; fault-code lookups; machine status and history on one screen. |
+| **Maintenance supervisors** | One approval queue for every work order, inspection, or alarm change the copilot proposes. |
+| **Reliability and plant engineers** | Fleet health, repeat faults, alarm trends, and an audit trail of every AI-assisted action. |
+| **Developers and integrators** | A reference design for a safe, on-premise, human-in-the-loop agent system you can adapt to your own equipment. |
+
+The bundled sample plant covers CNC lathes, hydraulic presses, and semiconductor tools (plasma etchers, PECVD, lithography scanners, CMP polishers), plus lock-out/tag-out (LOTO) SOPs.
 
 ---
 
-## System Architecture
+## What you can do with it
+
+**Troubleshoot a fault**
+> "EQ-1000 is showing high spindle vibration. What should I check?"
+
+The copilot pulls the relevant manual sections, checks the machine's recent readings, open alarms, and repair history, then lists likely causes and checks with each source cited.
+
+**Look up a fault code**
+> "What does fault E-210 mean and how do I clear it?"
+
+**Find a procedure**
+> "What is the LOTO procedure before servicing the hydraulic pump?"
+
+It returns the matching SOP steps and links to the full document.
+
+**Request work, safely**
+> "Create a critical work order for the RF matchbox on EQ-2001."
+
+The copilot drafts the work order and then **pauses**. Nothing is written until a supervisor approves it in the Work Orders queue, and every request and decision is logged.
+
+**Decline what it should not answer**
+Off-topic questions, prompt-injection attempts, and questions the documents can't support are declined instead of guessed at.
+
+---
+
+## How it works
 
 ```mermaid
-flowchart TD
-    User([Maintenance Technician / Supervisor]) -->|Bearer JWT / HttpOnly Cookie| API[FastAPI Security Gateway & RBAC]
-    TelemetrySource[Sensors / PLCs / Simulators] -->|HMAC SHA-256 Signed JSON| API
-    MQTTBroker[MQTT Broker: Mosquitto QoS 1] -->|Topic: factory/equipment/+/telemetry| MQTTClient[Async MQTT Ingestion Worker]
-    MQTTClient --> IngestionService[Telemetry & Threshold Engine]
-    API --> IngestionService
-
-    IngestionService -->|Insert Event & Automated Alarms| PlantDB[(Dual DB: SQLite / PostgreSQL)]
-    IngestionService -.->|Strict HITL Isolation: NO AUTO WORK ORDERS| PlantDB
-
-    API -->|Prompt & Thread ID| Checkpointer[(Dual Checkpointer: SqliteSaver / PostgresSaver)]
-
-    subgraph MultiAgentGraph [LangGraph Autonomous State Machine & HITL Protocol]
-        Router[Supervisor Agent - Router Node]
-        Router -->|Manual Specs & LOTO| Retrieval[Retrieval Agent]
-        Router -->|Telemetry, Alarms, Logs| Diagnostic[Diagnostic Agent]
-        Router -->|Repair SOPs & Work Orders| Maintenance[Maintenance Agent]
-        Router -->|Out of Domain / Injection| Guardrail[Prototype Embedding Guardrail - 97% Accuracy]
-
-        Diagnostic -->|State Mutation: Acknowledge Alarm| ApprovalNode[Approval Node: interrupt()]
-        Maintenance -->|State Mutation: Create WO / Inspection| ApprovalNode
-
-        ApprovalNode -.->|Thread Paused / State Saved| Checkpointer
-        HumanReviewer([Supervisor Reviewer]) -->|POST /api/v1/actions/{id}/approve| ApprovalNode
-        ApprovalNode -->|Command(resume=...)| MutationExecution[Execute Mutation & Log Audit]
-    end
-
-    subgraph DataAndVectorLayer [Data Persistence & Hybrid Retrieval]
-        Retrieval -->|Reciprocal Rank Fusion| RRFRetriever[Hybrid RRF Retriever + Metadata Filters]
-        RRFRetriever -->|Dense Cosine Search| FAISS[(FAISS Native C++ Index + SHA-256 Manifest)]
-        RRFRetriever -->|Sparse Lexical Match| BM25[(Rank-BM25 Lexical Store)]
-
-        Diagnostic -->|SQLAlchemy 2.0 ORM / SQL| PlantDB
-        Maintenance -->|SQLAlchemy 2.0 ORM / SQL| PlantDB
-        MutationExecution -->|Idempotent Transactions| PlantDB
-        MutationExecution -->|Immutable Trail| AuditDB[(action_audit Table)]
-    end
-
-    subgraph ObservabilityLayer [Observability & Telemetry]
-        API -.-> OTel[OpenTelemetry Distributed Tracing]
-        MultiAgentGraph -.-> Prom[Prometheus Metrics: /metrics]
-        LLMFactory[LLM Factory: Ollama / Azure OpenAI] -.-> TokenMetrics[Token Usage & Cost Accounting]
-    end
-
-    MultiAgentGraph --> Stream[Server-Sent Events SSE Token Stream]
-    Stream --> UI[React 19 Dashboard + Supervisor Approval Cards]
+flowchart LR
+    Tech([Technician]) --> UI[Web app]
+    Sensors[Sensors / PLCs] -->|signed REST or MQTT| API
+    UI --> API[FastAPI backend<br/>auth + roles]
+    API --> Guard{Guardrail}
+    Guard -->|off-topic / unsafe| Decline[Polite refusal]
+    Guard --> Router[Supervisor agent]
+    Router --> R[Retrieval agent<br/>manuals + SOPs]
+    Router --> D[Diagnostic agent<br/>telemetry, alarms, history]
+    Router --> M[Maintenance agent<br/>work orders, inspections]
+    R --> Search[(Hybrid search<br/>FAISS + BM25)]
+    D --> DB[(Plant database)]
+    M --> Approval[[Pause for approval]]
+    Sup([Supervisor]) --> Approval
+    Approval -->|approved| DB
 ```
 
+1. **Guardrail.** Every question is checked for topic and prompt injection before any agent runs.
+2. **Supervisor agent** routes the question to the right specialist.
+3. **Retrieval agent** searches your documents with hybrid semantic + keyword search (FAISS and BM25, merged by Reciprocal Rank Fusion) and answers only from what it finds.
+4. **Diagnostic agent** reads telemetry, alarms, and maintenance history from the plant database.
+5. **Maintenance agent** proposes actions. Anything that would change data is paused with LangGraph `interrupt()` and resumes only after a supervisor approves it.
+6. Answers stream back to the browser as they are generated.
+
+**Built with:** FastAPI, LangGraph, Ollama (`qwen2.5:7b`) or Azure OpenAI, FAISS + rank-bm25, `BAAI/bge-large-en-v1.5` embeddings, SQLAlchemy 2 on SQLite or PostgreSQL, React 19 + Vite + Tailwind CSS 4, OpenTelemetry and Prometheus.
 
 ---
 
-## Human-in-the-Loop Approval Workflow
+## Quick start
 
-State-changing actions in plant environments (creating work orders, booking machinery inspections, acknowledging critical safety alarms) require Human-in-the-Loop (HITL) authorization before database mutation:
+### Option A: Docker (easiest)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Tech as Maintenance Technician (tech1)
-    participant UI as React 19 Frontend
-    participant API as FastAPI Gateway
-    participant LG as LangGraph StateGraph
-    participant DB as SQLite / Postgres
-    actor Sup as Supervisor (supervisor1)
+Requires Docker Desktop. A GPU is optional but makes the LLM much faster.
 
-    Tech->>UI: "Create critical work order for EQ-2001 RF matchbox failure"
-    UI->>API: POST /api/chat/stream (Thread: session-xyz)
-    API->>LG: graph.astream_events(thread_id="session-xyz")
-    LG->>LG: Maintenance Agent creates pending action ACT-9A8B
-    LG->>LG: Approval node invokes interrupt(pending_action)
-    LG->>DB: Record action_audit (decision='requested', state saved in checkpointer)
-    LG-->>UI: SSE event: {"type": "approval_required", "action_id": "ACT-9A8B"}
-    UI->>UI: Render ActionApprovalCard (Action Paused, Pending Supervisor)
-
-    Sup->>UI: Log In as Supervisor
-    UI->>API: POST /api/v1/auth/login (supervisor1 / local seed credential)
-    API-->>UI: HttpOnly JWT Cookie (Role: supervisor)
-    Sup->>UI: Click "Approve & Execute"
-    UI->>API: POST /api/v1/actions/ACT-9A8B/approve
-    API->>LG: graph.invoke(Command(resume={'approved': True, 'approver': 'supervisor1'}))
-    LG->>DB: INSERT INTO work_orders (status='approved', approved_by='supervisor1')
-    LG->>DB: UPDATE action_audit (decision='approved')
-    API-->>UI: {"status": "approved", "work_order_id": "WO-2026-0004"}
-    UI->>UI: Update card to Approved with live confirmation
-```
-
-> The login uses a local development seed. Never reuse development credentials in shared or production environments.
-
-
----
-
-## Persistence
-
-1. **SQLite Mode (Default)**:
-   - Zero-dependency local persistence using WAL mode (`PRAGMA journal_mode=WAL;`) with busy timeouts.
-   - Ideal for isolated plant workstations, edge IPCs, and offline edge gateways.
-2. **PostgreSQL Mode**:
-   - Production multi-worker persistence using SQLAlchemy 2.0 ORM and connection pooling.
-   - LangGraph checkpoints stored via `PostgresSaver`.
-   - Migration CLI provided: `python scripts/migrate_sqlite_to_postgres.py --verify-counts`
-
----
-
-## Benchmark Results
-
-Evaluated on **100 test cases** covering Mechanical, Hydraulic, Pneumatic, Thermal, and Semiconductor domains. Retrieval metrics are measured on the **50 labeled retrieval queries within the 100-case benchmark** (guardrail metrics use all 100 cases), via 5 warm-ups + 3 measured passes per configuration with fixed query order and CUDA synchronization on RTX 3070 (see `reports/retrieval_opt/FINAL_retrieval_optimization_report.md`):
-
-### 1. Domain Guardrail & Safety Abstention
-| Metric | Target | Measured Empirical Result | Status |
-| :--- | :---: | :---: | :---: |
-| **Domain Classification Accuracy** | $\ge 95.0\%$ | **97.0%** (97 / 100 test cases) | Passed |
-| **Abstention Precision** | $\ge 90.0\%$ | **94.3%** | Passed |
-| **Abstention Recall** | $\ge 90.0\%$ | **100.0%** (0 false negatives) | Passed |
-| **F1-Score** | $\ge 90.0\%$ | **97.1%** | Passed |
-
-![Guardrail confusion matrix: 97.0% accuracy, zero false negatives on 100 cases](reports/figures/01_guardrail_confusion_matrix.png)
-
-### 2. Hybrid Retrieval Across 5 Domains (50 labeled retrieval queries; E1b semantic-block chunking, FAISS + BM25 RRF)
-| Domain | Queries | Recall@3 | MRR | Latency p50 | Latency p95 |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Mechanical (ApexMill CNC)** | 12 | **100.0%** | **0.903** | 156.1 ms | 202.4 ms |
-| **Hydraulic (TitanPress-3000)** | 12 | **83.3%** | **0.576** | 156.1 ms | 202.4 ms |
-| **Pneumatic (Air Handling)** | 1 | **100.0%** | **1.000** | 156.1 ms | 202.4 ms |
-| **Semiconductor (Plasma/PECVD/Litho/CMP)** | 22 | **95.5%** | **0.867** | 156.1 ms | 202.4 ms |
-| **Thermal (Spindle Chiller)** | 3 | **100.0%** | **0.611** | 156.1 ms | 202.4 ms |
-| **Overall Dataset (50 RAG queries)** | **50** | **94.0%** (Recall@5: **98.0%**) | **0.793** | **156.1 ms** | **202.4 ms** |
-
-![Per-domain Recall@3 with MRR annotations, E1b chunking, 50 queries](reports/figures/04_per_domain_recall_at_3.png)
-
-### 3. LLM Provider Cost Modeling
-| Provider | Setup | Marginal Monthly Cost (10k queries) | Latency |
-| :--- | :--- | :---: | :---: |
-| **Ollama (Qwen2.5:7B / Llama 3.1:8B)** | On-Premise GPU / CPU | **$0.00** | ~1.2s - 2.5s |
-| **Azure OpenAI (GPT-4o-mini)** | Managed Cloud Endpoint | **$74.50** | ~0.6s - 1.2s |
-
-![Marginal monthly LLM cost for 10k queries: Ollama $0.00 vs Azure OpenAI $74.50](reports/figures/06_llm_cost_comparison.png)
-
-Source of truth for numbers: `reports/README.md`, `reports/benchmark_report.md`, `reports/retrieval_opt/FINAL_retrieval_optimization_report.md`, charts in `reports/figures/`.
-
----
-
-## Technology Stack
-
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **LLM Providers** | `Ollama` (`qwen2.5:7b`) / `Azure OpenAI` (`gpt-4o-mini`) | Multi-agent reasoning, fault diagnosis, procedure synthesis |
-| **Agent Orchestration** | `LangGraph v0.2.35+` | State machine routing, `interrupt()` HITL approval gates |
-| **State Persistence** | `SqliteSaver` / `PostgresSaver` | Crash-resilient thread state and paused execution resumption |
-| **Database ORM** | `SQLAlchemy 2.0` + `Alembic` | Type-safe dual persistence across SQLite and PostgreSQL |
-| **Telemetry Ingestion** | `FastAPI` (REST + HMAC SHA-256) + `Paho MQTT` (QoS 1) | High-throughput sensor data ingestion and automated alarm mapping |
-| **Vector Indexing** | `FAISS` (Native C++ index) + `rank-bm25` | Hybrid dense semantic similarity + sparse lexical search |
-| **Embeddings** | `BAAI/bge-large-en-v1.5` | 1024-dimensional dense text embedding |
-| **Security & RBAC** | `Argon2id` + `PyJWT` + `HMAC SHA-256` | Password hashing, JWT auth, and machine payload integrity verification |
-| **Observability** | `OpenTelemetry` + `Prometheus` (`/metrics`) | Distributed tracing, agent execution latencies, and token usage accounting |
-| **Deployment** | `Docker Compose` + `Kubernetes Kustomize` | Production containerization, GPU node scheduling, and reverse proxying |
-| **Frontend UI** | `React 19` + `Vite` + `Tailwind CSS 4` | Real-time diagnostic workspace, DAG trace, supervisor approval modal |
-
----
-
-## Repository Layout
-
-```
-backend/            FastAPI gateway, LangGraph agents, RAG, guardrails, DB repos, MQTT, LLM factory
-frontend/           React 19 + Vite dashboard (src/api/types.ts contract, ActionApprovalCard)
-data/manuals+sops/ Sample plant docs ingested into FAISS (CNC, hydraulic, semi, LOTO SOPs)
-deploy/k8s/         Kustomize base + GPU overlay
-docker/             Prometheus + Grafana provisioning
-docs/               Docs map (docs/README.md), ADRs, equipment/fault taxonomy, runbooks, API reference
-scripts/            DB seed/migrate, telemetry simulator, benchmark harnesses
-reports/            Benchmark truth (FINAL_* + figures); intermediates are git-ignored
-.github/workflows/ CI: backend fast/slow, postgres, frontend, kustomize
-```
-
-Docs entry point: `docs/README.md`. API reference: `docs/api/README.md` + `docs/api/openapi.json` (generated, do not hand-edit).
-
----
-
-## Quick Start
-
-### 1. Prerequisites
-- Python 3.10+ (see `pyproject.toml`)
-- Node.js 20+ (see `.github/workflows/ci.yml`)
-- [Ollama](https://ollama.ai) installed locally: `ollama pull qwen2.5:7b`
-
-### 2. Environment file (required)
 ```bash
-# Windows (PowerShell)
-Copy-Item .env.example .env
-# macOS / Linux
-cp .env.example .env
-```
-Fill `JWT_SECRET` and `TELEMETRY_HMAC_SECRET` (32+ chars). Generate with `python -c "import secrets; print(secrets.token_hex(32))"`. Never commit `.env` — only `.env.example` is tracked.
-
-### 3. Backend setup
-```bash
-# Clone and enter directory
 git clone https://github.com/luqshzeeq3601-art/Factory-Maintenance-Copilot.git
 cd Factory-Maintenance-Copilot
-
-# Activate environment and install dependencies
-uv venv
-.venv\Scripts\activate
-uv pip install -e .
-
-# Run SQLite migrations (seeds equipment, fault codes, maintenance logs)
-python -m backend.app.database.migrations
-
-# Ingest technical manuals into FAISS vector store (regenerates git-ignored vector_store/)
-python -m backend.app.rag.ingest
-
-# Launch FastAPI server
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+cp .env.example .env          # then set JWT_SECRET and TELEMETRY_HMAC_SECRET
+docker compose up --build
+docker compose exec ollama ollama pull qwen2.5:7b
 ```
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs). Metrics: [http://localhost:8000/metrics](http://localhost:8000/metrics).
 
-### 4. Frontend setup
+Open http://localhost:3000.
+
+Optional extras:
+
 ```bash
+docker compose --profile mqtt up --build            # MQTT broker for live sensor feeds
+docker compose --profile observability up --build   # Prometheus :9090 + Grafana :3001
+docker compose --profile postgres up --build        # PostgreSQL instead of SQLite
+docker compose --profile all up --build             # everything
+```
+
+### Option B: Run locally
+
+Requires Python 3.10–3.12, Node.js 20+, [uv](https://docs.astral.sh/uv/), and [Ollama](https://ollama.com).
+
+```bash
+ollama pull qwen2.5:7b
+
+# Backend
+uv venv
+.venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
+uv pip install -e .
+cp .env.example .env            # set JWT_SECRET and TELEMETRY_HMAC_SECRET (32+ chars)
+python -m backend.app.database.migrations    # create and seed the sample plant database
+python -m backend.app.rag.ingest             # index the sample manuals and SOPs
+uvicorn backend.app.main:app --port 8000
+
+# Frontend (new terminal)
 cd frontend
 npm ci
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000). Set `VITE_API_URL=http://localhost:8000` if the API is remote. Refresh the typed contract with `npm run openapi` (regenerates from `/openapi.json` into `src/api/types.ts`).
 
-The UI requires sign-in. Routes: `/` dashboard, `/assets` (asset table + copilot), `/assets/:id/:tab?`, `/diagnostics/:id?/:tab?`, `/sops`, `/work-orders/:id?` (supervisors and admins also get a **Pending approval** tab), `/history`, `/settings/:section?`, `/login`. Filters, sort, and page live in the URL.
+Open http://localhost:3000. API docs are at http://localhost:8000/docs.
 
-In development, labelled sample data stands in when the API is unreachable. Production builds show the real error instead; set `VITE_DEMO_DATA=true` (sample data) or `VITE_DEMO_SIGNIN=true` (one-click demo accounts) only for demo deployments. Run the UI tests with `npm test`.
+On Windows, `start.bat` launches Ollama, the backend, and the frontend in one step once setup is done.
 
-### 5. Docker Compose profiles
+Generate secrets with:
+
 ```bash
-docker compose up --build                                   # backend + frontend + ollama
-docker compose --profile mqtt up --build                    # + Mosquitto broker
-docker compose --profile observability up --build           # + Prometheus :9090, Grafana :3001
-docker compose --profile postgres up --build                # + PostgreSQL :5432 (requires POSTGRES_PASSWORD in .env)
-docker compose --profile all up --build                     # everything
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
+
+---
+
+## Using the app
+
+### Sign in
+
+The sample database includes three development accounts, one per role: `tech1` (technician), `supervisor1` (supervisor), and `admin1` (admin). Their development passwords are set in `backend/app/database/migrations.py`. **Change or remove them before anyone else can reach the app.** To create your own users:
+
+```bash
+python -m backend.app.cli.user_cli create-user
+```
+
+| Role | Can do |
+|---|---|
+| Technician | Ask the copilot, view assets and history, request work orders and inspections |
+| Supervisor | Everything above, plus approve or reject pending actions |
+| Admin | Everything above, plus user and plant administration |
+
+### Pages
+
+| Page | Purpose |
+|---|---|
+| **Dashboard** | Fleet health, andon board, recent activity, repairs by fault type |
+| **Assets** | Searchable equipment list with the copilot chat alongside |
+| **Asset detail** | Status, KPIs, parts, alarms, and history for one machine |
+| **Diagnostics** | Live telemetry charts and a diagnostic view per machine |
+| **SOPs** | Browse and add standard operating procedures |
+| **Work orders** | All work orders; supervisors and admins also see the **Pending approval** queue |
+| **History** | Timeline of maintenance events, alarms, and approvals |
+| **Settings** | Profile and preferences |
+
+### Simulate live machine data
+
+```bash
+# Backfill 24 hours of sensor readings for the Diagnostics charts
+python scripts/simulate_telemetry.py --samples --machines EQ-1000,EQ-1001 --hours 24 --step-minutes 10
+
+# Stream live, HMAC-signed readings over REST, or over MQTT (start compose with --profile mqtt)
+python scripts/simulate_telemetry.py --transport rest --scenario mechanical --rate 2.0
+python scripts/simulate_telemetry.py --transport mqtt --scenario semiconductor --rate 1.0
+```
+
+Telemetry can raise alarms, but it can never create a work order on its own.
+
+---
+
+## Bring your own plant data
+
+1. Put manuals in `data/manuals/` and SOPs in `data/sops/` as Markdown. Clear headings help: documents are split into sections by heading.
+2. Re-index:
+   ```bash
+   python -m backend.app.rag.ingest
+   ```
+3. Add your equipment and fault codes to the database (the sample seed in `backend/app/database/migrations.py` shows the shape).
+4. Send sensor readings, HMAC-signed, to `POST /api/v1/telemetry/events` or publish them over MQTT (default topic `factory/+/telemetry`).
+
+More detail: `docs/context/ingestion_runbook.md`, `docs/context/equipment_taxonomy.md`, `docs/context/fault_ontology.md`.
 
 ---
 
 ## Configuration
 
-Key settings (`backend/app/config.py`, defaults overridable via `.env`):
+Settings live in `.env` (start from `.env.example`); defaults are in `backend/app/config.py`.
 
-| Variable | Default | Notes |
-| :--- | :--- | :--- |
-| `ENV` | `development` | `production` refuses to boot on default secrets (`validate_prod_secrets()`) |
-| `LLM_PROVIDER` | `ollama` | `ollama` or `azure_openai` |
-| `OLLAMA_BASE_URL` / `LLM_MODEL` | `http://localhost:11434` / `qwen2.5:7b` | Local inference |
-| `AZURE_OPENAI_ENDPOINT` / `DEPLOYMENT` / `API_KEY` | empty | Required when `LLM_PROVIDER=azure_openai` |
-| `EMBEDDING_MODEL_NAME` | `BAAI/bge-large-en-v1.5` | Downloaded from HuggingFace on first ingest |
-| `DATABASE_PATH` / `VECTOR_STORE_DIR` / `DOCS_DIR` | `backend/app/database/maintenance.db` / `vector_store` / `data` | Local paths |
-| `JWT_SECRET` | dev default | Must be 32+ chars, non-default in prod |
-| `TELEMETRY_HMAC_SECRET` / `TELEMETRY_HMAC_REQUIRED` | dev default / `False` | Prod requires override + `True` |
-| `PERSISTENCE_BACKEND` / `DATABASE_URL` | `sqlite` | Set `postgres` + `DATABASE_URL` for production |
-| `MQTT_ENABLED` / `MQTT_BROKER_HOST` | `False` / `localhost` | Enable with `--profile mqtt` |
-| `VECTOR_BACKEND` | `faiss` | `faiss` today; `milvus` / `azure_search` on roadmap |
-
-Secrets are never stored in the repository. Locally they live in `.env`; in Kubernetes they come from a `copilot-secrets` Secret you create yourself (see [Deployment](#deployment)).
+| Variable | Default | What it does |
+|---|---|---|
+| `LLM_PROVIDER` | `ollama` | `ollama` for local, `azure_openai` for cloud |
+| `LLM_MODEL` | `qwen2.5:7b` | Ollama model name |
+| `AZURE_OPENAI_ENDPOINT` / `_DEPLOYMENT` / `_API_KEY` | empty | Only needed for Azure OpenAI |
+| `EMBEDDING_MODEL_NAME` | `BAAI/bge-large-en-v1.5` | Downloaded on first ingest |
+| `DEVICE` | `cuda` | Set `cpu` if you have no GPU |
+| `PERSISTENCE_BACKEND` / `DATABASE_URL` | `sqlite` | Use `postgres` + a connection URL for multi-user deployments |
+| `JWT_SECRET`, `TELEMETRY_HMAC_SECRET` | dev placeholders | **Must** be replaced; `ENV=production` refuses to start with defaults |
+| `TELEMETRY_HMAC_REQUIRED` | `False` | Set `True` in production to reject unsigned sensor data |
+| `MQTT_ENABLED` | `False` | Turn on MQTT ingestion |
 
 ---
 
-## Local Development Accounts
+## Results
 
-> [!WARNING]
-> These are **local dev seeds only** created by `scripts/seed_db.py` / migrations. Password values are intentionally not published here. Change or remove them in any shared or production environment. Technicians cannot approve actions; only `supervisor`/`admin` can.
+Measured on a 100-case benchmark of mechanical, hydraulic, pneumatic, thermal, and semiconductor questions, running on an RTX 3070 (8 GB).
 
-| Username | Role | Privileges |
-| :--- | :---: | :--- |
-| `tech1` | `technician` | Query chat, request work orders, initiate inspections |
-| `supervisor1` | `supervisor` | Authorize / reject pending work orders, alarms, inspections |
-| `admin1` | `admin` | Full plant registry access and system administration |
+| What | Result |
+|---|---|
+| Correct manual section in the top 3 results | **94.0%** (98.0% in the top 5, MRR 0.793) |
+| Search latency | **156 ms** median, 202 ms p95 |
+| Unsafe or off-topic prompts blocked | **100%** (97.0% overall guardrail accuracy) |
+| LLM cost per 10,000 questions | **$0** locally vs. about $74.50 on Azure OpenAI GPT-4o-mini |
 
----
+![Per-domain Recall@3](reports/figures/04_per_domain_recall_at_3.png)
 
-## Tests and Benchmarks
-
-```bash
-# Fast subset (<60s, no model download)
-pytest backend/tests/ -q -m "not slow"
-
-# Full suite (embedding/LLM marked slow, HF cache required)
-pytest backend/tests/ -v
-
-# Contract + API slice (same as CI backend-fast)
-pytest backend/tests/test_api_contract.py backend/tests/test_v1_api.py backend/tests/test_design_spec_api.py -q -m "not slow"
-
-# 100-case extended evaluation benchmark
-python scripts/evaluate_extended.py
-
-# Fast 50-case CI benchmark
-python scripts/evaluate_ci.py
-```
-
-### Machine telemetry simulation
-```bash
-# Mechanical vibration & thermal REST telemetry with HMAC signing
-python scripts/simulate_telemetry.py --transport rest --scenario mechanical --rate 2.0
-
-# Semiconductor plasma RF power deviation via MQTT (QoS 1)
-python scripts/simulate_telemetry.py --transport mqtt --scenario semiconductor --rate 1.0
-```
+Method and raw numbers: `reports/benchmark_report.md` and `reports/retrieval_opt/FINAL_retrieval_optimization_report.md`. Reproduce with:
 
 ```bash
-# Backfill 24 h of simulated continuous sensor samples (spindle speed, temperature, vibration, motor current)
-# for the Diagnostics "Live data" charts
-python scripts/simulate_telemetry.py --samples --machines EQ-1000,EQ-1001 --hours 24 --step-minutes 10
+python scripts/evaluate_extended.py   # 100 cases
+python scripts/evaluate_ci.py         # fast 50-case run
 ```
-
-Postgres live check: `python scripts/verify_postgres.py --verify-counts`.
 
 ---
 
 ## Deployment
 
-```bash
-# 1. Create the runtime secret (values come from your secret manager, never from git)
-kubectl create namespace industrial-copilot
-kubectl -n industrial-copilot create secret generic copilot-secrets   --from-literal=DATABASE_URL=...   --from-literal=CHECKPOINT_DATABASE_URL=...   --from-literal=JWT_SECRET=...   --from-literal=TELEMETRY_HMAC_SECRET=...
+- **Single site or edge PC:** Docker Compose with SQLite is enough. See `docs/runbooks/edge-deploy.md`.
+- **Kubernetes:** Kustomize manifests are in `deploy/k8s/`. Create the secret first, then apply:
 
-# 2. Deploy base manifests (ConfigMap, PVC, backend, frontend, ingress)
-kubectl apply -k deploy/k8s/base/
+  ```bash
+  kubectl create namespace industrial-copilot
+  kubectl -n industrial-copilot create secret generic copilot-secrets \
+    --from-literal=DATABASE_URL=... \
+    --from-literal=CHECKPOINT_DATABASE_URL=... \
+    --from-literal=JWT_SECRET=... \
+    --from-literal=TELEMETRY_HMAC_SECRET=...
+  kubectl apply -k deploy/k8s/base/
+  kubectl apply -k deploy/k8s/overlays/gpu/     # optional GPU node for Ollama
+  ```
 
-# 3. Optional: GPU-accelerated Ollama overlay
-kubectl apply -k deploy/k8s/overlays/gpu/
-```
+  In production, load secrets from a secret manager such as Azure Key Vault or External Secrets rather than the command line.
 
-In production, prefer ExternalSecrets or Azure Key Vault (`AZURE_KEYVAULT_URL`) over hand-created secrets. CI validates the manifests with `kubectl kustomize deploy/k8s/base` + `kubeconform`. Edge install notes: `docs/runbooks/edge-deploy.md`.
-
-Files that stay local and are never committed (`.env`, databases, the FAISS index, build output) are listed in `.gitignore`.
+- **Monitoring:** `/metrics` exposes Prometheus metrics, and a ready-made Grafana dashboard is in `docker/grafana/`.
 
 ---
 
-## Contributing
+## Project structure
 
-- Branch from `master` and keep PRs focused.
-- Before opening a PR, run `pytest backend/tests/ -q -m "not slow"`, and for UI changes `npm run lint`, `npm test`, and `npm run build` in `frontend/`.
-- API changes: regenerate `docs/api/openapi.json` and `frontend/src/api/types.ts` (`npm run openapi`); the contract is checked by `backend/tests/test_api_contract.py`.
-- Architecture decisions live in `docs/adr/`; notable changes in `CHANGELOG.md`.
-- Please report security issues privately to the maintainer rather than in a public issue.
+```
+backend/        FastAPI app: agents, retrieval, guardrails, auth, database, telemetry, MQTT
+frontend/       React 19 web app
+data/           Sample manuals and SOPs (replace with your own)
+scripts/        Seeding, telemetry simulator, benchmarks, SQLite-to-Postgres migration
+deploy/k8s/     Kubernetes manifests (base + GPU overlay)
+docker/         Prometheus and Grafana configuration
+docs/           API reference, architecture decisions, runbooks, equipment taxonomy
+reports/        Benchmark results and charts
+```
+
+---
+
+## Development
+
+```bash
+# Backend tests (fast subset, no model download)
+pytest backend/tests/ -q -m "not slow"
+
+# Full backend suite (downloads the embedding model)
+pytest backend/tests/
+
+# Frontend
+cd frontend
+npm run lint
+npm test
+npm run build
+```
+
+If you change the API, regenerate `docs/api/openapi.json` and `frontend/src/api/types.ts` (`npm run openapi`). Architecture decisions are recorded in `docs/adr/`, and notable changes in `CHANGELOG.md`.
+
+Contributions are welcome. Please open an issue before larger changes, and report security issues privately to the maintainer rather than in a public issue.
+
+---
+
+## Limitations
+
+- This is a decision-support tool, not a safety system. Always follow your site's LOTO and safety procedures, and have qualified people verify repair guidance.
+- Answers are only as good as the documents you index. Scanned PDFs must be converted to text first.
+- The bundled plant data, equipment, and accounts are samples for demonstration.
+- FAISS is the supported vector backend; the Milvus and Azure AI Search backends are early stubs.
 
 ---
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE). Changelog: [`CHANGELOG.md`](CHANGELOG.md).
+MIT. See [LICENSE](LICENSE).
