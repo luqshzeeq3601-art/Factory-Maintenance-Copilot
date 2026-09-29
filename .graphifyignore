@@ -1,6 +1,0 @@
-# graphify ignore - secrets templates are intentional, not leaks
-deploy/k8s/base/secrets.yaml
-.env
-.env.local
-*.key
-*.pem

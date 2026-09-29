@@ -10,9 +10,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen.svg)](./.github/workflows/ci.yml)
 
-An enterprise-grade, **Agentic AI Maintenance Assistant & Human-in-the-Loop Copilot** for smart manufacturing and semiconductor fabrication facilities. Orchestrates specialized autonomous agents via **LangGraph StateGraph**, enforces strict Role-Based Access Control (RBAC) with supervisor approval checkpoints, executes high-throughput HMAC SHA-256 verified REST & MQTT telemetry ingestion, provides dual database persistence (SQLite & PostgreSQL with Alembic migrations), and executes hybrid dense/lexical RAG with Reciprocal Rank Fusion (RRF) over plant technical documentation (CNC Lathes, Hydraulic Presses, Semiconductor Plasma Etchers, PECVD Deposition, Lithography Scanners, CMP Polishers, and LOTO SOPs).
+A human-in-the-loop AI maintenance copilot for factories and semiconductor fabs. Technicians ask about a machine, alarm, or fault code; the copilot answers from the plant's own manuals and SOPs, reads live telemetry, and drafts work orders that a supervisor must approve before anything changes.
 
-Runs **100% locally with zero external API costs** on consumer hardware (tested on Intel Core i7 / NVIDIA GeForce RTX 3070 8GB VRAM) using Ollama (`qwen2.5:7b-instruct`) and `BAAI/bge-large-en-v1.5`, or can seamlessly scale to managed **Azure OpenAI** in cloud environments.
+Under the hood: a LangGraph multi-agent graph (retrieval, diagnostic, maintenance), hybrid FAISS + BM25 retrieval with Reciprocal Rank Fusion, role-based access control, HMAC-signed REST/MQTT telemetry, and SQLite or PostgreSQL persistence. Sample documentation covers CNC lathes, hydraulic presses, plasma etchers, PECVD, lithography scanners, CMP polishers, and LOTO SOPs.
+
+Runs fully offline on a single workstation (tested on an RTX 3070, 8 GB VRAM) with Ollama `qwen2.5:7b-instruct` and `BAAI/bge-large-en-v1.5`, or switches to Azure OpenAI with one setting.
 
 ---
 
@@ -32,20 +34,18 @@ Runs **100% locally with zero external API costs** on consumer hardware (tested 
 - [Outcomes](#outcomes)
 - [Features](#features)
 - [System Architecture](#system-architecture)
-- [Human-in-the-Loop & RBAC Approval Workflow](#human-in-the-loop--rbac-approval-workflow)
-- [Dual Database Persistence Architecture](#dual-database-persistence-architecture)
-- [Extended 100-Case Benchmark Results](#extended-100-case-benchmark-results)
+- [Human-in-the-Loop Approval Workflow](#human-in-the-loop-approval-workflow)
+- [Persistence](#persistence)
+- [Benchmark Results](#benchmark-results)
 - [Technology Stack](#technology-stack)
 - [Repository Layout](#repository-layout)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Local Development Accounts](#local-development-accounts)
-- [Verification & Tests](#verification--tests)
+- [Tests and Benchmarks](#tests-and-benchmarks)
 - [Deployment](#deployment)
-- [What Is Deliberately NOT in This Repo](#what-is-deliberately-not-in-this-repo)
 - [Contributing](#contributing)
-- [Security](#security)
-- [License & Roadmap](#license--roadmap)
+- [License](#license)
 
 ---
 
@@ -62,7 +62,7 @@ Runs **100% locally with zero external API costs** on consumer hardware (tested 
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -116,7 +116,7 @@ flowchart TD
 
 ---
 
-## 🔐 Human-in-the-Loop & RBAC Approval Workflow
+## Human-in-the-Loop Approval Workflow
 
 State-changing actions in plant environments (creating work orders, booking machinery inspections, acknowledging critical safety alarms) require Human-in-the-Loop (HITL) authorization before database mutation:
 
@@ -156,7 +156,7 @@ sequenceDiagram
 
 ---
 
-## 💾 Dual Database Persistence Architecture
+## Persistence
 
 1. **SQLite Mode (Default)**:
    - Zero-dependency local persistence using WAL mode (`PRAGMA journal_mode=WAL;`) with busy timeouts.
@@ -168,9 +168,9 @@ sequenceDiagram
 
 ---
 
-## 📊 Extended 100-Case Benchmark Results
+## Benchmark Results
 
-Evaluated across **100 test cases** covering Mechanical, Hydraulic, Pneumatic, Thermal, and Semiconductor domains. Retrieval metrics are measured on the **50 labeled retrieval queries within the 100-case benchmark** (guardrail metrics use all 100 cases), via 5 warm-ups + 3 measured passes per configuration with fixed query order and CUDA synchronization on RTX 3070 (see `reports/retrieval_opt/FINAL_retrieval_optimization_report.md`):
+Evaluated on **100 test cases** covering Mechanical, Hydraulic, Pneumatic, Thermal, and Semiconductor domains. Retrieval metrics are measured on the **50 labeled retrieval queries within the 100-case benchmark** (guardrail metrics use all 100 cases), via 5 warm-ups + 3 measured passes per configuration with fixed query order and CUDA synchronization on RTX 3070 (see `reports/retrieval_opt/FINAL_retrieval_optimization_report.md`):
 
 ### 1. Domain Guardrail & Safety Abstention
 | Metric | Target | Measured Empirical Result | Status |
@@ -206,7 +206,7 @@ Source of truth for numbers: `reports/README.md`, `reports/benchmark_report.md`,
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
@@ -230,9 +230,9 @@ Source of truth for numbers: `reports/README.md`, `reports/benchmark_report.md`,
 backend/            FastAPI gateway, LangGraph agents, RAG, guardrails, DB repos, MQTT, LLM factory
 frontend/           React 19 + Vite dashboard (src/api/types.ts contract, ActionApprovalCard)
 data/manuals+sops/ Sample plant docs ingested into FAISS (CNC, hydraulic, semi, LOTO SOPs)
-deploy/k8s/         Kustomize base + GPU overlay (secrets.yaml is placeholder-only)
+deploy/k8s/         Kustomize base + GPU overlay
 docker/             Prometheus + Grafana provisioning
-docs/               Diataxis map (docs/README.md), ADRs, context taxonomy, runbooks, roadmap
+docs/               Docs map (docs/README.md), ADRs, equipment/fault taxonomy, runbooks, API reference
 scripts/            DB seed/migrate, telemetry simulator, benchmark harnesses
 reports/            Benchmark truth (FINAL_* + figures); intermediates are git-ignored
 .github/workflows/ CI: backend fast/slow, postgres, frontend, kustomize
@@ -242,7 +242,7 @@ Docs entry point: `docs/README.md`. API reference: `docs/api/README.md` + `docs/
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - Python 3.10+ (see `pyproject.toml`)
@@ -288,7 +288,7 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000). Set `VITE_API_URL=http://localhost:8000` if the API is remote. Refresh the typed contract with `npm run openapi` (regenerates from `/openapi.json` into `src/api/types.ts`).
 
-The UI requires sign-in and follows [`maintenance_copilot_design_spec/`](maintenance_copilot_design_spec/DESIGN.md). Routes: `/` dashboard, `/assets` (asset table + copilot), `/assets/:id/:tab?`, `/diagnostics/:id?/:tab?`, `/sops`, `/work-orders/:id?` (supervisors and admins also get a **Pending approval** tab), `/history`, `/settings/:section?`, `/login`. Filters, sort, and page live in the URL.
+The UI requires sign-in. Routes: `/` dashboard, `/assets` (asset table + copilot), `/assets/:id/:tab?`, `/diagnostics/:id?/:tab?`, `/sops`, `/work-orders/:id?` (supervisors and admins also get a **Pending approval** tab), `/history`, `/settings/:section?`, `/login`. Filters, sort, and page live in the URL.
 
 In development, labelled sample data stands in when the API is unreachable. Production builds show the real error instead; set `VITE_DEMO_DATA=true` (sample data) or `VITE_DEMO_SIGNIN=true` (one-click demo accounts) only for demo deployments. Run the UI tests with `npm test`.
 
@@ -321,7 +321,7 @@ Key settings (`backend/app/config.py`, defaults overridable via `.env`):
 | `MQTT_ENABLED` / `MQTT_BROKER_HOST` | `False` / `localhost` | Enable with `--profile mqtt` |
 | `VECTOR_BACKEND` | `faiss` | `faiss` today; `milvus` / `azure_search` on roadmap |
 
-Kubernetes secrets (`deploy/k8s/base/secrets.yaml`) are **placeholder-only** (`CHANGEME_VIA_EXTERNAL_SECRETS`). Production mounts real values via ExternalSecrets / KeyVault (`AZURE_KEYVAULT_URL`). See `SECURITY.md`.
+Secrets are never stored in the repository. Locally they live in `.env`; in Kubernetes they come from a `copilot-secrets` Secret you create yourself (see [Deployment](#deployment)).
 
 ---
 
@@ -338,7 +338,7 @@ Kubernetes secrets (`deploy/k8s/base/secrets.yaml`) are **placeholder-only** (`C
 
 ---
 
-## Verification & Tests
+## Tests and Benchmarks
 
 ```bash
 # Fast subset (<60s, no model download)
@@ -379,49 +379,33 @@ Postgres live check: `python scripts/verify_postgres.py --verify-counts`.
 ## Deployment
 
 ```bash
-# Deploy base manifests (ConfigMap, Secret, PVC, Backend, Frontend, Ingress)
+# 1. Create the runtime secret (values come from your secret manager, never from git)
+kubectl create namespace industrial-copilot
+kubectl -n industrial-copilot create secret generic copilot-secrets   --from-literal=DATABASE_URL=...   --from-literal=CHECKPOINT_DATABASE_URL=...   --from-literal=JWT_SECRET=...   --from-literal=TELEMETRY_HMAC_SECRET=...
+
+# 2. Deploy base manifests (ConfigMap, PVC, backend, frontend, ingress)
 kubectl apply -k deploy/k8s/base/
 
-# Deploy GPU-accelerated Ollama overlay on GPU cluster
+# 3. Optional: GPU-accelerated Ollama overlay
 kubectl apply -k deploy/k8s/overlays/gpu/
 ```
-CI validates with `kubectl kustomize deploy/k8s/base` (`kustomize` job in `.github/workflows/ci.yml`). Edge runbook: `docs/runbooks/edge-deploy.md`. Handover: `docs/collaboration/me-ee-handover.md`.
 
----
+In production, prefer ExternalSecrets or Azure Key Vault (`AZURE_KEYVAULT_URL`) over hand-created secrets. CI validates the manifests with `kubectl kustomize deploy/k8s/base` + `kubeconform`. Edge install notes: `docs/runbooks/edge-deploy.md`.
 
-## What Is Deliberately NOT in This Repo
-
-Public-hygiene allowlist — these exist locally but are **never pushed**:
-
-- `.env`, `.env.local` — real secrets (only `.env.example` is tracked).
-- `*.db`, `*.db-wal`, `*.db-shm`, `*.sqlite*` — e.g. `backend/app/database/maintenance.db`, `checkpoints.db`.
-- `vector_store/*.faiss`, `chunks_cache.json`, `manifest.json` — regenerated via `python -m backend.app.rag.ingest`.
-- `scratch/`, `graphify-out/`, `.venv/`, `.pytest_cache/`, `__pycache__/`, `*.egg-info/`, `*.log`.
-- `frontend/node_modules/`, `frontend/dist/`.
-- `*.lnk` Windows shortcuts.
-- `reports/retrieval_opt/retrieval_experiments_*` intermediates — only `FINAL_*`, `baseline.md`, `benchmark_report.md`, and `reports/figures/` are pushed.
-
-Enforced by `.gitignore`. Verify with `git check-ignore -v .env backend/app/database/maintenance.db vector_store/index.faiss scratch/` and `git status --porcelain -uall` before pushing.
+Files that stay local and are never committed (`.env`, databases, the FAISS index, build output) are listed in `.gitignore`.
 
 ---
 
 ## Contributing
 
-- Branch from `master`, keep PRs focused; run `pytest backend/tests/ -q -m "not slow"` plus `npm run lint` / `npm test` / `npm run build` in `frontend/` for UI changes.
-- API changes require regenerating `docs/api/openapi.json` and `frontend/src/api/types.ts` (see `frontend/package.json:openapi` script); contract covered by `backend/tests/test_api_contract.py`.
-- Docs follow `docs/README.md` conventions: Markdown, ASCII headings (no emoji in H1/H2), forward-slash paths, `file:line` code refs.
-- Decisions live in `docs/adr/`, history in `CHANGELOG.md`, owners in `CODEOWNERS`.
+- Branch from `master` and keep PRs focused.
+- Before opening a PR, run `pytest backend/tests/ -q -m "not slow"`, and for UI changes `npm run lint`, `npm test`, and `npm run build` in `frontend/`.
+- API changes: regenerate `docs/api/openapi.json` and `frontend/src/api/types.ts` (`npm run openapi`); the contract is checked by `backend/tests/test_api_contract.py`.
+- Architecture decisions live in `docs/adr/`; notable changes in `CHANGELOG.md`.
+- Please report security issues privately to the maintainer rather than in a public issue.
 
 ---
 
-## Security
+## License
 
-See `SECURITY.md`: never commit `.env`, `*.key`, `*.pem`, or real `deploy/k8s/base/secrets.yaml` values; `ENV=production` refuses default secrets; telemetry requires HMAC in prod; report vulnerabilities via private issue with `X-Request-ID` and `action_audit` IDs (no secrets in issues).
-
----
-
-## License & Roadmap
-
-- License: MIT — see `LICENSE`.
-- Roadmap: `docs/roadmap/README.md` (phases 0–3 plus ME/EE handover and edge deploy).
-- Changelog: `CHANGELOG.md`.
+MIT, see [`LICENSE`](LICENSE). Changelog: [`CHANGELOG.md`](CHANGELOG.md).

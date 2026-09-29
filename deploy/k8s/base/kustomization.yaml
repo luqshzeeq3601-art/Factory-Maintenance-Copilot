@@ -5,7 +5,6 @@ namespace: industrial-copilot
 
 resources:
   - configmap.yaml
-  - secrets.yaml
   - pvc.yaml
   - backend-deployment.yaml
   - backend-service.yaml

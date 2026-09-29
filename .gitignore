@@ -62,8 +62,28 @@ frontend/screenshot_*.png
 Thumbs.db
 *.lnk
 
-# NOTE: deploy/k8s/base/secrets.yaml is intentionally TRACKED as a
-# placeholder-only template (CHANGEME values). It is required by
-# deploy/k8s/base/kustomization.yaml and CI kustomize build.
-# Never put real credentials in it - use ExternalSecrets/KeyVault in prod.
-# See SECURITY.md.
+
+# AI agent tooling and local assistant config (never public)
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+.codex/
+.graphifyignore
+graphify-out/
+
+# Security policy and secret manifests (kept private)
+SECURITY.md
+CODEOWNERS
+deploy/k8s/base/secrets.yaml
+deploy/k8s/base/secrets.template.yaml
+*.key
+*.pem
+
+# Internal planning, design drafts, and local launchers
+docs/roadmap/
+docs/collaboration/
+docs/screenshots/
+design.md
+maintenance_copilot_design_spec/
+Launch Industrial Copilot.bat

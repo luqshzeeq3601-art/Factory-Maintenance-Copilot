@@ -1,4 +1,0 @@
-* @maintainers backend/app/agents/ backend/app/rag/ backend/app/guardrails/
-* @reliability backend/app/database/ data/manuals/ data/sops/ docs/context/
-* @platform deploy/k8s/ docker/ docker-compose.yml .github/workflows/
-* @frontend-team frontend/src/api/types.ts frontend/src/components/ActionApprovalCard.tsx
