@@ -94,7 +94,7 @@ export default function AssetsPage() {
   const loading = equipment.isLoading;
 
   return (
-    <div className="grid gap-6 wide:grid-cols-[minmax(0,1fr)_320px] min-[1700px]:grid-cols-[minmax(0,1fr)_minmax(360px,27%)] wide:items-start">
+    <div className="grid gap-6 wide:grid-cols-[minmax(0,1fr)_340px] wide-assets:grid-cols-[minmax(0,73%)_minmax(0,27%)] wide:items-start">
       <div className="min-w-0 space-y-5">
         <PageHeader title="Assets" subtitle="Plant equipment, condition, and service status." />
 

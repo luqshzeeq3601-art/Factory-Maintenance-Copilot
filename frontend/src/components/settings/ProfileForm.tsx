@@ -46,15 +46,15 @@ export function ProfileForm({ profile, canEditRole }: { profile: Profile; canEdi
   const departments = draft.department && !DEPARTMENTS.includes(draft.department) ? [draft.department, ...DEPARTMENTS] : DEPARTMENTS;
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-6">
-      <div className="flex items-center gap-5">
-        <span className="w-20 h-20 rounded-full bg-deck text-white text-[26px] font-semibold flex items-center justify-center shrink-0" aria-hidden="true">
+    <form onSubmit={submit} noValidate className="space-y-7">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-5 p-5 rounded-[var(--radius-card)] bg-sunken border border-line">
+        <span className="w-20 h-20 rounded-full bg-deck text-white text-[26px] font-semibold flex items-center justify-center shrink-0 shadow-xs" aria-hidden="true">
           {initials(profile.full_name)}
         </span>
-        <div>
-          <p className="text-heading font-bold tracking-[-0.02em]">{profile.full_name}</p>
-          <p className="text-copy text-body">
-            {ROLE_LABEL[profile.role] ?? profile.role} · <span className="font-data">{profile.username}</span>
+        <div className="min-w-0">
+          <p className="text-heading font-bold tracking-[-0.02em] text-ink">{profile.full_name}</p>
+          <p className="mt-0.5 text-copy text-body">
+            {ROLE_LABEL[profile.role] ?? profile.role} · <span className="font-data font-medium text-ink">{profile.username}</span>
           </p>
         </div>
       </div>
@@ -65,12 +65,12 @@ export function ProfileForm({ profile, canEditRole }: { profile: Profile; canEdi
         </p>
       )}
 
-      <fieldset className="space-y-4">
+      <fieldset className="space-y-5">
         <legend className="sr-only">Personal details</legend>
         <TextField inline label="Full name" required autoComplete="name" error={errors.full_name} {...bind("full_name")} />
         <TextField inline label="Email" type="email" autoComplete="email" placeholder="name@company.com" error={errors.email} {...bind("email")} />
       </fieldset>
-      <fieldset className="space-y-4 pt-4 border-t border-line">
+      <fieldset className="space-y-5 pt-5 border-t border-line">
         <legend className="sr-only">Role and workplace</legend>
         <SelectField
           inline

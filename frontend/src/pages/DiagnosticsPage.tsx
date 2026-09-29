@@ -16,9 +16,10 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { EmptyState } from "../components/ui/States";
 import { StatusLabel } from "../components/ui/StatusLabel";
 import { TabPanel, Tabs } from "../components/ui/Tabs";
-import { EquipmentSchematicIcon } from "../components/workspace/EquipmentSchematicIcon";
+import { EquipmentThumbnail } from "../components/workspace/EquipmentThumbnail";
 import { formatDate, formatDateTime, humanize } from "../lib/format";
 import { ALARM_STATUS, assetStatus, attentionRank } from "../lib/status";
+import { TriangleAlert } from "lucide-react";
 
 const TABS = [
   { id: "live", label: "Live data" },
@@ -40,6 +41,8 @@ export default function DiagnosticsPage() {
   const current = (TABS.find((t) => t.id === tab)?.id ?? "live") as TabId;
 
   const alarms = useAlarms({ machine_id: assetId, status: alarmFilter || undefined });
+  const allAlarms = useAlarms({ machine_id: assetId });
+  const activeAlarms = useMemo(() => (allAlarms.data ?? []).filter((a) => a.status === "active"), [allAlarms.data]);
   const history = useHistory({ machine_id: assetId, page_size: 25 });
 
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function DiagnosticsPage() {
             <>
               <Card className="p-5">
                 <div className="flex flex-wrap items-start gap-5">
-                  <EquipmentSchematicIcon machineId={asset.machine_id} name={asset.name} type={asset.type} size="lg" className="bg-panel" />
+                  <EquipmentThumbnail machineId={asset.machine_id} name={asset.name} type={asset.type} size="lg" className="bg-panel shadow-2xs" />
                   <div className="min-w-0 flex-1">
                     <h2 className="text-heading font-bold tracking-[-0.02em]">{asset.name}</h2>
                     <p className="mt-1 flex flex-wrap gap-x-2 text-copy text-body">
@@ -120,11 +123,43 @@ export default function DiagnosticsPage() {
                 </div>
               </Card>
 
+              {/* Active fault summary (up to 3 rows) */}
+              {activeAlarms.length > 0 && current !== "faults" && (
+                <div className="p-4 rounded-[var(--radius-card)] bg-danger-bg/70 border border-danger-line space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-meta font-bold text-danger-ink">
+                      <TriangleAlert className="w-4 h-4 text-danger" aria-hidden="true" />
+                      Active fault {activeAlarms.length === 1 ? "code" : "codes"} requiring attention ({activeAlarms.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/diagnostics/${asset.machine_id}/faults`)}
+                      className="text-meta font-semibold text-danger hover:underline cursor-pointer"
+                    >
+                      View all faults →
+                    </button>
+                  </div>
+                  <ul className="space-y-1.5 divide-y divide-danger-line/60">
+                    {activeAlarms.slice(0, 3).map((a) => (
+                      <li key={a.alarm_id} className="pt-1.5 first:pt-0 flex items-center justify-between gap-3 text-meta">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-data font-semibold text-danger-ink px-1.5 py-0.5 rounded bg-white/80 border border-danger-line/80">
+                            {a.code}
+                          </span>
+                          <span className="text-ink truncate">{a.fault_description ?? "Fault detected"}</span>
+                        </div>
+                        <time className="font-data text-body shrink-0 text-label">{formatDateTime(a.triggered_at)}</time>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div>
                 <Tabs
                   label="Diagnostics views"
                   idBase="diag"
-                  items={[...TABS]}
+                  items={TABS.map((t) => ({ ...t, count: t.id === "faults" && activeAlarms.length ? activeAlarms.length : undefined }))}
                   value={current}
                   onChange={(id) => navigate(`/diagnostics/${asset.machine_id}${id === "live" ? "" : `/${id}`}`, { replace: true })}
                 />

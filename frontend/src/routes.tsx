@@ -62,7 +62,8 @@ export const routes: RouteObject[] = [
       { path: "sops", element: <SopsPage /> },
       { path: "work-orders/:workOrderId?", element: <WorkOrdersPage /> },
       { path: "history", element: <HistoryPage /> },
-      { path: "settings/:section?", element: <SettingsPage /> },
+      { path: "settings", element: <Navigate to="/settings/profile" replace /> },
+      { path: "settings/:section", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/" replace /> }
     ]
   }

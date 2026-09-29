@@ -20,10 +20,10 @@ const VARIANTS: Record<Variant, string> = {
   soft: "bg-accent-bg text-accent-ink hover:bg-accent-line/50"
 };
 
-// Spec: 40–44px controls; `sm` is for dense table rows and still keeps a 36px hit area.
+// Spec: 44px primary controls; `sm` is for dense table rows (36px).
 const SIZES: Record<Size, string> = {
   sm: "h-9 px-3",
-  md: "h-10 px-4 pointer-coarse:h-11"
+  md: "h-11 px-4"
 };
 
 function buttonClass(variant: Variant = "secondary", size: Size = "md", className?: string) {
@@ -96,7 +96,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       className={cn(
         "inline-flex items-center justify-center shrink-0 rounded-[var(--radius-control)] text-body cursor-pointer",
         "hover:text-ink hover:bg-wash active:bg-line transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
-        size === "sm" ? "w-9 h-9" : "w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11",
+        size === "sm" ? "w-9 h-9" : "w-11 h-11",
         className
       )}
       {...rest}

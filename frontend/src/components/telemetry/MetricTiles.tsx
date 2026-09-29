@@ -1,7 +1,6 @@
-import { Activity } from "lucide-react";
 import type { Sample } from "../../api/models";
 import { formatNumber } from "../../lib/format";
-import { EmptyState, ErrorState } from "../ui/States";
+import { ErrorState } from "../ui/States";
 import { METRICS, byMetric } from "./metrics";
 
 interface MetricTilesProps {
@@ -25,15 +24,6 @@ export function MetricTiles({ samples, isLoading, error, onRetry, windowLabel }:
     );
   }
   const groups = byMetric(samples);
-  if (METRICS.every((m) => groups[m.id].length === 0)) {
-    return (
-      <EmptyState
-        icon={Activity}
-        title={`No sensor readings in the ${windowLabel.toLowerCase()}`}
-        message="Readings appear once the machine's sensors report. Choose a longer window, or check the telemetry feed."
-      />
-    );
-  }
   return (
     <ul className="grid gap-3 grid-cols-2 xl:grid-cols-4">
       {METRICS.map((m) => {

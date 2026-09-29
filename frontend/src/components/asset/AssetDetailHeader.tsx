@@ -7,7 +7,7 @@ import { AndonLight } from "../ui/AndonLight";
 import { Button, ButtonLink } from "../ui/Button";
 import { Menu } from "../ui/Menu";
 import { StatusLabel } from "../ui/StatusLabel";
-import { EquipmentSchematicIcon } from "../workspace/EquipmentSchematicIcon";
+import { EquipmentThumbnail } from "../workspace/EquipmentThumbnail";
 
 interface AssetDetailHeaderProps {
   asset: Equipment;
@@ -20,8 +20,8 @@ export function AssetDetailHeader({ asset, onOpenSop, onAsk }: AssetDetailHeader
   const navigate = useNavigate();
   const status = assetStatus(asset.status);
   return (
-    <div className="flex flex-wrap items-start gap-5">
-      <EquipmentSchematicIcon machineId={asset.machine_id} name={asset.name} type={asset.type} size="xl" className="bg-panel" />
+    <div className="flex flex-wrap items-start gap-6">
+      <EquipmentThumbnail machineId={asset.machine_id} name={asset.name} type={asset.type} size="xl" className="bg-panel shadow-2xs" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-heading font-bold tracking-[-0.02em] text-ink">{asset.name}</h1>

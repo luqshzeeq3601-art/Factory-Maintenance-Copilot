@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { CircleAlert, Eye, EyeOff, HardHat, Lock, User, UserCog } from "lucide-react";
+import { CircleAlert, Eye, EyeOff, Lock, User } from "lucide-react";
 import { API_BASE } from "../../config";
 import { SignInError, signIn, type AuthUser, type SignInErrorKind } from "../../api/auth";
 import { cn } from "../../lib/cn";
@@ -10,14 +10,22 @@ import { Button } from "../ui/Button";
 const DEMO_ACCOUNTS =
   import.meta.env.DEV || import.meta.env.VITE_DEMO_SIGNIN === "true"
     ? [
-        { id: "supervisor1", label: "Supervisor", icon: UserCog, password: "SupervisorPass123!" },
-        { id: "tech1", label: "Technician", icon: HardHat, password: "TechPass123!" }
+        {
+          id: "supervisor1",
+          label: "Supervisor",
+          badgeBg: "bg-[#DBEAFE] text-[#2563EB]",
+          cardBg: "bg-[#F0F6FF] border-[#BFDBFE] hover:bg-[#E0EEFE] hover:border-blue-300",
+          password: "SupervisorPass123!"
+        },
+        {
+          id: "tech1",
+          label: "Technician",
+          badgeBg: "bg-[#DCFCE7] text-[#16A34A]",
+          cardBg: "bg-[#F0FDF4] border-[#BBF7D0] hover:bg-[#DCFCE7] hover:border-emerald-300",
+          password: "TechPass123!"
+        }
       ]
     : [];
-
-const INPUT =
-  "w-full h-11 pl-10 rounded-[var(--radius-control)] border bg-panel text-copy text-ink placeholder:text-subtle " +
-  "hover:border-faint focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent";
 
 export function LoginForm({ onSignedIn }: { onSignedIn: (user: AuthUser) => void }) {
   const [username, setUsername] = useState("");
@@ -60,22 +68,23 @@ export function LoginForm({ onSignedIn }: { onSignedIn: (user: AuthUser) => void
 
   return (
     <div>
-      <form onSubmit={onSubmit} noValidate className="space-y-4">
+      <form onSubmit={onSubmit} noValidate className="space-y-3.5">
         {error && (
-          <p id="signin-error" role="alert" className="flex items-start gap-2 p-3 rounded-[var(--radius-control)] bg-danger-bg text-meta font-medium text-danger-ink">
+          <p id="signin-error" role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-danger-bg text-meta font-medium text-danger-ink">
             <CircleAlert className="w-4 h-4 mt-px shrink-0 text-danger" aria-hidden="true" />
             {error.message}
           </p>
         )}
-        <div className="space-y-1.5">
-          <label htmlFor="signin-username" className="block text-meta font-semibold text-ink">
+        <div className="space-y-1">
+          <label htmlFor="signin-username" className="sr-only">
             Username
           </label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" aria-hidden="true" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
             <input
               id="signin-username"
               name="username"
+              placeholder="Username"
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
@@ -83,20 +92,25 @@ export function LoginForm({ onSignedIn }: { onSignedIn: (user: AuthUser) => void
               onChange={(e) => setUsername(e.target.value)}
               aria-invalid={invalidUser || undefined}
               aria-describedby={error ? "signin-error" : undefined}
-              className={cn(INPUT, "pr-3", invalidUser ? "border-danger" : "border-line-strong")}
+              className={cn(
+                "w-full h-11 pl-10 pr-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400",
+                "hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#2563EB] transition-all",
+                invalidUser ? "border-danger focus:ring-danger/20" : "border-slate-200"
+              )}
             />
           </div>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="signin-password" className="block text-meta font-semibold text-ink">
+        <div className="space-y-1">
+          <label htmlFor="signin-password" className="sr-only">
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" aria-hidden="true" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
             <input
               ref={passwordRef}
               id="signin-password"
               name="password"
+              placeholder="Password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               value={password}
@@ -105,14 +119,18 @@ export function LoginForm({ onSignedIn }: { onSignedIn: (user: AuthUser) => void
               onKeyDown={trackCapsLock}
               aria-invalid={invalidPass || undefined}
               aria-describedby={[error ? "signin-error" : "", capsLock ? "signin-caps" : ""].filter(Boolean).join(" ") || undefined}
-              className={cn(INPUT, "pr-12", invalidPass ? "border-danger" : "border-line-strong")}
+              className={cn(
+                "w-full h-11 pl-10 pr-10 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400",
+                "hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#2563EB] transition-all",
+                invalidPass ? "border-danger focus:ring-danger/20" : "border-slate-200"
+              )}
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               aria-pressed={showPassword}
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-md flex items-center justify-center text-subtle hover:text-ink hover:bg-wash cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
             >
               {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
             </button>
@@ -123,34 +141,42 @@ export function LoginForm({ onSignedIn }: { onSignedIn: (user: AuthUser) => void
             </p>
           )}
         </div>
-        <Button type="submit" variant="primary" className="w-full h-11" loading={pending === "form"} disabled={busy}>
-          Sign in
-        </Button>
+        <div className="pt-1">
+          <Button type="submit" variant="primary" className="w-full h-11 rounded-xl shadow-xs bg-[#2563EB] hover:bg-[#1D4ED8] font-medium" loading={pending === "form"} disabled={busy}>
+            Sign in
+          </Button>
+        </div>
       </form>
 
       {DEMO_ACCOUNTS.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center gap-3 text-meta text-muted">
-            <span className="h-px flex-1 bg-line" aria-hidden="true" />
-            Or continue as
-            <span className="h-px flex-1 bg-line" aria-hidden="true" />
+        <div className="mt-5">
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            or continue as
+            <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            {DEMO_ACCOUNTS.map(({ id, label, icon: Icon, password: pass }) => (
+            {DEMO_ACCOUNTS.map(({ id, label, badgeBg, cardBg, password: pass }) => (
               <button
                 key={id}
                 type="button"
                 disabled={busy}
                 onClick={() => void submit(id, id, pass)}
                 aria-label={`Continue as ${label} (demo account ${id})`}
-                className="flex flex-col items-center justify-center gap-2 h-24 rounded-[var(--radius-card)] border border-line bg-sunken hover:border-accent-line hover:bg-accent-bg text-small font-semibold text-ink cursor-pointer transition-colors disabled:opacity-50"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border cursor-pointer transition-all disabled:opacity-50",
+                  cardBg
+                )}
               >
-                <Icon className="w-6 h-6 text-accent" strokeWidth={1.75} aria-hidden="true" />
-                {pending === id ? "Signing in…" : label}
+                <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", badgeBg)}>
+                  <User className="w-4 h-4 fill-current" aria-hidden="true" />
+                </div>
+                <span className="text-[13px] font-semibold text-slate-800">
+                  {pending === id ? "Signing in…" : label}
+                </span>
               </button>
             ))}
           </div>
-          <p className="mt-3 text-label text-muted text-center">Demo accounts, available in development builds only.</p>
         </div>
       )}
     </div>

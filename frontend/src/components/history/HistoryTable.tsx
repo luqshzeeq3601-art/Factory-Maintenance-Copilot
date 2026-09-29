@@ -43,7 +43,7 @@ export function HistoryTable({ events, isLoading, error, onRetry, empty, showAss
       cell: (e) => {
         const to = eventLink(e);
         return to ? (
-          <Link to={to} className="inline-flex items-center h-9 px-3 rounded-md text-meta font-semibold text-accent bg-accent-bg hover:bg-accent-line/50">
+          <Link to={to} className="inline-flex items-center h-9 px-3 rounded-[var(--radius-control)] text-meta font-semibold text-accent bg-accent-bg hover:bg-accent-line/50 transition-colors">
             View<span className="sr-only"> {EVENT_META[e.type].label.toLowerCase()} {e.ref ?? ""}</span>
           </Link>
         ) : (

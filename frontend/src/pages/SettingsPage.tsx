@@ -48,9 +48,9 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="Settings" />
-      <Card className="grid md:grid-cols-[240px_minmax(0,1fr)] overflow-hidden">
+      <Card className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[240px_minmax(0,1fr)] overflow-hidden">
         <nav aria-label="Settings sections" className="p-3 border-b md:border-b-0 md:border-r border-line">
-          <ul className="flex md:flex-col gap-1 overflow-x-auto">
+          <ul className="flex md:flex-col gap-1 overflow-x-auto custom-scrollbar">
             {visible.map((s) => (
               <li key={s.id} className="shrink-0">
                 {s.comingSoon ? (
@@ -83,7 +83,7 @@ export default function SettingsPage() {
           <h2 id="settings-section-title" className="text-section font-semibold">
             {current.label}
           </h2>
-          <div className="mt-6 max-w-[760px]">
+          <div className="mt-6 max-w-[1080px]">
             {current.id === "profile" && <ProfileSection isAdmin={isAdmin} />}
             {current.id === "notifications" && (
               <EmptyState

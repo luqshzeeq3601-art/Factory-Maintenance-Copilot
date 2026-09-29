@@ -55,7 +55,7 @@ export function EquipmentSchematicIcon({
     sm: "w-11 h-11 min-w-[44px]",
     md: "w-14 h-14 min-w-[56px]",
     lg: "w-18 h-18 min-w-[72px]",
-    xl: "w-24 h-24 min-w-[96px] p-3"
+    xl: "w-28 h-28 min-w-[112px] sm:w-32 sm:h-32 sm:min-w-[128px] p-2.5"
   }[size];
 
   const strokeColor = "currentColor";

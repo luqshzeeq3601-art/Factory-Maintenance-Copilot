@@ -7,7 +7,7 @@ import { assetStatus } from "../../lib/status";
 import { DataTable, type Column, type SortState } from "../ui/DataTable";
 import { Menu } from "../ui/Menu";
 import { StatusLabel } from "../ui/StatusLabel";
-import { EquipmentSchematicIcon } from "../workspace/EquipmentSchematicIcon";
+import { EquipmentThumbnail } from "../workspace/EquipmentThumbnail";
 
 interface AssetTableProps {
   rows: Equipment[] | undefined;
@@ -46,7 +46,7 @@ export function AssetTable({ rows, isLoading, error, onRetry, sort, onSortChange
       sortKey: "name",
       cell: (a) => (
         <span className="flex items-center gap-3 min-w-[160px] max-w-[196px]">
-          <EquipmentSchematicIcon machineId={a.machine_id} name={a.name} type={a.type} size="sm" className="hidden min-[1600px]:flex" />
+          <EquipmentThumbnail machineId={a.machine_id} name={a.name} type={a.type} size="sm" className="hidden min-[1600px]:flex" />
           <span className="min-w-0 leading-tight">
             <Link to={`/assets/${a.machine_id}`} onClick={(e) => e.stopPropagation()} className="block text-small font-semibold text-ink hover:underline underline-offset-2">
               {a.name}
@@ -100,6 +100,7 @@ export function AssetTable({ rows, isLoading, error, onRetry, sort, onSortChange
       onRowClick={(a) => navigate(`/assets/${a.machine_id}`)}
       empty={empty}
       skeletonRows={10}
+      density="spacious"
     />
   );
 }

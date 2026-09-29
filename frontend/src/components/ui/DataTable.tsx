@@ -37,9 +37,11 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   rowClassName?: (row: T) => string | undefined;
   skeletonRows?: number;
+  /** Row density: "normal" (48px standard list) or "spacious" (56px asset list). */
+  density?: "normal" | "spacious";
 }
 
-/** Data table with a sticky header, 48px rows, sortable headers, and loading/empty/error states. Cards on phones. */
+/** Data table with a sticky header, 48px/56px rows, sortable headers, and loading/empty/error states. Cards on phones. */
 export function DataTable<T>({
   caption,
   columns,
@@ -53,7 +55,8 @@ export function DataTable<T>({
   onSortChange,
   onRowClick,
   rowClassName,
-  skeletonRows = 8
+  skeletonRows = 8,
+  density = "normal"
 }: DataTableProps<T>) {
   if (error && !rows) return <ErrorState title={`${caption} didn't load`} message={error.message} onRetry={onRetry} />;
 
@@ -107,7 +110,7 @@ export function DataTable<T>({
               ? Array.from({ length: skeletonRows }, (_, i) => (
                   <tr key={i} aria-hidden="true">
                     {columns.map((col) => (
-                      <td key={col.key} className="h-12 px-4 border-b border-line">
+                      <td key={col.key} className={cn(density === "spacious" ? "h-14" : "h-12", "px-4 border-b border-line")}>
                         <div className="skeleton h-3.5 w-3/4" />
                       </td>
                     ))}
@@ -127,7 +130,8 @@ export function DataTable<T>({
                       <td
                         key={col.key}
                         className={cn(
-                          "h-12 px-3 first:pl-4 last:pr-4 py-2 border-b border-line text-meta text-ink align-middle",
+                          density === "spacious" ? "h-14" : "h-12",
+                          "px-3 first:pl-4 last:pr-4 py-2 border-b border-line text-meta text-ink align-middle",
                           col.align === "right" && "text-right",
                           col.className
                         )}

@@ -50,7 +50,7 @@ export function SopTable({ rows, isLoading, error, onRetry, onOpen, onAsk, empty
               e.stopPropagation();
               onOpen(s);
             }}
-            className="inline-flex items-center h-9 px-3 rounded-md text-meta font-semibold text-accent bg-accent-bg hover:bg-accent-line/50 cursor-pointer"
+            className="inline-flex items-center h-9 px-3 rounded-[var(--radius-control)] text-meta font-semibold text-accent bg-accent-bg hover:bg-accent-line/50 transition-colors cursor-pointer"
           >
             View<span className="sr-only"> {s.title}</span>
           </button>

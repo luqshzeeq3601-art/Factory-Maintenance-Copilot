@@ -8,7 +8,7 @@ import { Card } from "../ui/Card";
 import { SearchInput } from "../ui/Filters";
 import { ErrorState } from "../ui/States";
 import { StatusLabel } from "../ui/StatusLabel";
-import { EquipmentSchematicIcon } from "../workspace/EquipmentSchematicIcon";
+import { EquipmentThumbnail } from "../workspace/EquipmentThumbnail";
 
 interface AssetRailProps {
   equipment: Equipment[] | undefined;
@@ -63,7 +63,7 @@ export function AssetRail({ equipment, isLoading, error, onRetry, tab }: AssetRa
                     )
                   }
                 >
-                  <EquipmentSchematicIcon machineId={a.machine_id} name={a.name} type={a.type} size="sm" className="bg-panel" />
+                  <EquipmentThumbnail machineId={a.machine_id} name={a.name} type={a.type} size="sm" className="bg-panel" />
                   <span className="min-w-0 flex-1 leading-tight">
                     <span className="block text-small font-semibold text-ink truncate">{a.name}</span>
                     <span className="block font-data text-label text-body">{a.machine_id}</span>

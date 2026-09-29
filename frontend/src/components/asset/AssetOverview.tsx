@@ -28,7 +28,7 @@ export function AssetOverview({ asset, activeAlarms }: { asset: Equipment; activ
   const activity = useHistory({ machine_id: asset.machine_id, page_size: 5 });
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,63%)_minmax(0,37%)]">
       <div className="space-y-4 min-w-0">
         <Card aria-labelledby="key-metrics-heading">
           <CardHeader id="key-metrics-heading" title="Key metrics" subtitle="Last 24 hours" />

@@ -8,7 +8,7 @@ import { AndonLight } from "../ui/AndonLight";
 import { Card, CardHeader } from "../ui/Card";
 import { EmptyState, ErrorState } from "../ui/States";
 import { StatusLabel } from "../ui/StatusLabel";
-import { EquipmentSchematicIcon } from "../workspace/EquipmentSchematicIcon";
+import { EquipmentThumbnail } from "../workspace/EquipmentThumbnail";
 
 const BOARD_SIZE = 5;
 
@@ -74,7 +74,7 @@ function AndonCard({ asset }: { asset: Equipment }) {
       )}
     >
       <div className="flex items-start gap-3">
-        <EquipmentSchematicIcon machineId={asset.machine_id} name={asset.name} type={asset.type} size="md" className="bg-panel" />
+        <EquipmentThumbnail machineId={asset.machine_id} name={asset.name} type={asset.type} size="md" className="bg-panel" />
         <div className="min-w-0 flex-1">
           <p className="text-title font-semibold text-ink truncate group-hover:underline underline-offset-2">{asset.name}</p>
           <p className="font-data text-label font-medium text-body">{asset.machine_id}</p>
